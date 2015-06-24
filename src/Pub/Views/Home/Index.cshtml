@@ -1,0 +1,106 @@
+﻿<div class="jumbotron text-center container" style="margin-top: 20px;" ng-app="pubIndexApp" ng-controller="pubIndexCtrl">
+    <div class="well col-md-4 col-md-offset-4">
+        <p>Currently {{peopleInQueue}} people in queue.</p>
+    </div>
+    @if (User.Identity.IsAuthenticated)
+    {
+        <div class="well col-md-4 col-md-offset-4">
+            <p ng-show="isUserOnCooldown">You can see random ten in {{cooldownLeft}}</p>
+            <button class="btn btn-lg btn-success" ng-disabled="isUserOnCooldown" onclick='location.href="@Url.Action("SeeRandomTen")"'>See random ten</button>
+        </div>
+    <div class="well col-md-4 col-md-offset-4">
+        <p ng-hide="isInQueue">You are not in queue. Get in the queue to be found!</p>
+        <button class="btn btn-lg btn-success" ng-click="enterQueue()" ng-hide="isInQueue">Enter queue</button>
+        <button class="btn btn-lg btn-danger" ng-click="enterQueue()" ng-show="isInQueue">Leave queue</button>
+    </div>
+    }
+
+    @if (!User.Identity.IsAuthenticated)
+    {
+        <div class="well col-md-4 col-md-offset-4">
+            <p>Please log in to enjoy the Pub.</p>
+        </div>
+    }
+</div>
+
+<script>
+    var app = angular.module('pubIndexApp', []);
+    app.controller('pubIndexCtrl', function ($scope, $http) {
+
+        var True = true;
+        var False = false;
+        var userIsAuthenticated = @User.Identity.IsAuthenticated;
+
+
+        function pollServerForCooldown() {
+            if(userIsAuthenticated){
+                setTimeout(function () {
+                    $http.post('@Url.Action("GetRemainingCooldown")').
+                    success(function (data) {
+                        if (data == false) {
+                            $scope.isUserOnCooldown = false;
+                        }else{
+                            pollServerForCooldown();
+                        }
+                        $scope.cooldownLeft = data;
+                    })
+                    .error(function (data) {
+                    });
+
+                }, 1000);
+            }
+        }
+        pollServerForCooldown();
+
+        $scope.isInQueue = @Html.ViewBag.IsInQueue
+
+        $http.post('@Url.Action("GetRemainingCooldown")').
+                success(function (data) {
+                    $scope.cooldownLeft = data;
+                })
+                .error(function (data) {
+                });
+
+        $http.post('@Url.Action("GetPeopleInQueue")').
+                 success(function (data) {
+                     $scope.peopleInQueue = data;
+                 })
+                 .error(function (data) {
+                 });
+
+        $http.post('@Url.Action("IsUserOnCooldown")').
+                 success(function (data) {
+                     $scope.isUserOnCooldown = data;
+                 })
+                 .error(function (data) {
+                 });
+
+
+        $scope.seeRandomTen = function () {
+            $http.post('@Url.Action("SeeRandomTen")').
+                success(function (data) {
+                    $scope.isUserOnCooldown = true;
+                    pollServerForCooldown();
+                }).
+                error(function (data) {
+                    alert('error');
+                });
+        }
+
+        // on "enter queue" button click
+        $scope.enterQueue = function () {
+            $http.post('@Url.Action("GetInLine")').
+                success(function (data, status, headers, config) {
+                    if ($scope.isInQueue) {
+                        $scope.peopleInQueue--;
+                    } else {
+                        $scope.peopleInQueue++;
+                    }
+                    $scope.isInQueue = !$scope.isInQueue;
+                }).
+                error(function (data, status, headers, config) {
+                });
+        };
+    });
+
+</script>

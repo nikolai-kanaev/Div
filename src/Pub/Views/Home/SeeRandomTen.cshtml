@@ -1,0 +1,61 @@
+﻿@model IEnumerable<Pub.Models.PublicProfile>
+
+<style>
+    p {
+        color: white;
+    }
+
+    .outer {
+        text-align: center;
+    }
+
+    .profile-div {
+        background: dodgerblue;
+        min-height: 150px;
+        margin: 5px;
+    }
+
+    /* centered columns styles */
+    .row-centered {
+        text-align: center;
+    }
+
+    .col-centered {
+        display: inline-block;
+        float: none;
+        /* reset the text-align */
+        text-align: left;
+        /* inline-block space fix */
+        margin-right: -4px;
+        margin-left: 20px;
+        margin-bottom: 20px;
+        background: dodgerblue;
+        min-height: 150px;
+        padding: 10px;
+    }
+</style>
+
+
+<div class="outer container jumbotron" ng-app="randomTenApp" ng-controller="randomTenCtrl">
+    <div class="row row-centered">
+        <div class="col-xs-3 col-centered" ng-repeat="profile in randomTenProfiles">
+            <p>{{profile.DisplayName}}</p>
+            <p>{{profile.City}}, {{profile.Country}}</p>
+            <p>{{profile.Description}}</p>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    var app = angular.module('randomTenApp', []);
+    app.controller('randomTenCtrl', function ($scope, $http) {
+        $http.post('@Url.Action("SeeRandomTenData")').
+                success(function (data, status, headers, config) {
+                    $scope.randomTenProfiles = data;
+                    console.log($scope.randomTenProfiles);
+                }).
+                error(function (data, status, headers, config) {
+                });
+    });
+</script>
