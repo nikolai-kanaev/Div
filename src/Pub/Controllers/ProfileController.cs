@@ -6,6 +6,7 @@ using System.Web;
 using System.Web.Mvc;
 using Microsoft.AspNet.Identity;
 using System.Data.Entity;
+using System.IO;
 
 namespace Pub.Controllers
 {
@@ -16,7 +17,11 @@ namespace Pub.Controllers
         public ActionResult EditPublicProfile()
         {
             var currentUserId = User.Identity.GetUserId();
-
+            using (var db = new ApplicationDbContext())
+            {
+                var userProfileImageUri = db.Users.FirstOrDefault(u => u.Id == currentUserId).ProfileImageUri;
+                ViewBag.ProfileImageUri = userProfileImageUri;
+            }
             using (var db = new PubContext())
             {
                 var userProfile = db.PublicProfiles.FirstOrDefault(p => p.UserId == currentUserId);
@@ -26,6 +31,7 @@ namespace Pub.Controllers
                     db.PublicProfiles.Add(userProfile);
                     db.SaveChanges();
                 }
+
                 return View(userProfile);
             }
         }
@@ -46,5 +52,50 @@ namespace Pub.Controllers
             }
             return View(publicProfile);
         }
+
+        public ActionResult UploadProfileImage(HttpPostedFileBase file)
+        {
+            if (file != null)
+            {
+                string fileName = Guid.NewGuid().ToString() + ".jpg";
+                string path = System.IO.Path.Combine(
+                                       Server.MapPath("~/Images/Profile"), fileName);
+
+
+                using (var db = new ApplicationDbContext())
+                {
+                    var userId = User.Identity.GetUserId();
+                    var currentUser = db.Users.FirstOrDefault(u => u.Id == userId);
+                    if (currentUser.ProfileImageUri != null)
+                    {
+                        var success = RemoveCurrentImage(currentUser.ProfileImageUri);
+                    }
+                    currentUser.ProfileImageUri = fileName;
+                    db.Entry(currentUser).State = EntityState.Modified;
+                    db.SaveChanges();
+                }
+
+                // file is uploaded
+                file.SaveAs(path);
+
+            }
+            // after successfully uploading redirect the user
+            return RedirectToAction("EditPublicProfile");
+        }
+
+        private bool RemoveCurrentImage(string imageUri)
+        {
+            try
+            {
+                string path = System.IO.Path.Combine(Server.MapPath("~/Images/Profile"), imageUri);
+                System.IO.File.Delete(path);
+                return true;
+            }
+            catch (Exception e)
+            {
+                return false;
+            }
+        }
+
     }
 }

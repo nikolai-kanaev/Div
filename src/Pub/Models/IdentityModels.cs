@@ -11,6 +11,7 @@ namespace Pub.Models
     public class ApplicationUser : IdentityUser
     {
 
+        public string ProfileImageUri { get; set; }
         public bool IsInLine { get; set; }
         public DateTime CooldownEnds { get; set; }
 
